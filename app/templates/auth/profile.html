@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% block title %}User Profile & Security — BBMKU UFMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2 class="page-title">Officer Profile & Security Settings</h2>
+    <div class="page-subtitle">Account credentials and administrative designation</div>
+  </div>
+</div>
+
+<div class="profile-split-grid" style="margin-bottom:24px;">
+  <!-- User Details Card -->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Official Identity</h3>
+    </div>
+    <div class="card-body">
+      <!-- Officer Profile Hero Banner -->
+      <div class="app-profile-hero">
+        <div class="app-profile-avatar">
+          {{ current_user.full_name[:1] }}
+        </div>
+        <div class="app-profile-meta">
+          <div class="app-profile-name">{{ current_user.full_name }}</div>
+          <div class="app-profile-desig">{{ current_user.designation }}</div>
+          <div class="app-profile-role">{{ current_user.role.display_name }}</div>
+        </div>
+      </div>
+
+      <!-- App-style Grouped Detail Rows -->
+      <div class="app-profile-group">
+        <div class="app-profile-row">
+          <span class="apr-label">Username</span>
+          <span class="apr-value font-mono"><strong>{{ current_user.username }}</strong></span>
+        </div>
+        <div class="app-profile-row">
+          <span class="apr-label">Official Email</span>
+          <span class="apr-value">{{ current_user.email }}</span>
+        </div>
+        <div class="app-profile-row">
+          <span class="apr-label">Department</span>
+          <span class="apr-value">{{ current_user.department.name if current_user.department else 'University Headquarters' }}</span>
+        </div>
+        <div class="app-profile-row">
+          <span class="apr-label">Section / Branch</span>
+          <span class="apr-value">{{ current_user.section.name if current_user.section else 'General Administration' }}</span>
+        </div>
+        <div class="app-profile-row">
+          <span class="apr-label">Contact Phone</span>
+          <span class="apr-value">{{ current_user.phone or 'Not configured' }}</span>
+        </div>
+        <div class="app-profile-row">
+          <span class="apr-label">Account Status</span>
+          <span class="apr-value"><span class="badge badge-approved">Active &amp; Verified</span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Change Password Form -->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Update Security Password</h3>
+    </div>
+    <div class="card-body">
+      <form method="POST" action="{{ url_for('auth.profile') }}">
+        {{ form.hidden_tag() }}
+
+        <div class="form-group">
+          <label class="form-label" for="current_password">Current Password *</label>
+          {{ form.current_password(class="form-control", id="current_password", required=True) }}
+          {% if form.current_password.errors %}
+            <div class="form-error">{{ form.current_password.errors[0] }}</div>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="new_password">New Password *</label>
+          {{ form.new_password(class="form-control", id="new_password", required=True) }}
+          {% if form.new_password.errors %}
+            <div class="form-error">{{ form.new_password.errors[0] }}</div>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="confirm_password">Confirm New Password *</label>
+          {{ form.confirm_password(class="form-control", id="confirm_password", required=True) }}
+          {% if form.confirm_password.errors %}
+            <div class="form-error">{{ form.confirm_password.errors[0] }}</div>
+          {% endif %}
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width:100%; min-height:42px; font-weight:600;">Update Password</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

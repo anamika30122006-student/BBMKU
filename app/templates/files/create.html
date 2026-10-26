@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+{% block title %}Register New File — BBMKU UFMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2 class="page-title">Register & Initiate Official File</h2>
+    <div class="page-subtitle">A unique sequential file number (BBMKU/DEPT/YEAR/XXXX) will be generated automatically upon submission.</div>
+  </div>
+  <a href="{{ url_for('files.list_files') }}" class="btn btn-secondary">
+    &larr; Back to File Registry
+  </a>
+</div>
+
+<div class="card" style="max-width:960px; margin:0 auto;">
+  <div class="card-header" style="background-color:#fafbfc;">
+    <h3 class="card-title">File Registration Form</h3>
+    <span style="font-size:12px; color:var(--text-muted);">* Mandatory Fields</span>
+  </div>
+  <div class="card-body">
+    <form method="POST" action="{{ url_for('files.create') }}" enctype="multipart/form-data" novalidate>
+      {{ form.hidden_tag() }}
+
+      <div class="form-grid">
+        <!-- Section 1: Classification -->
+        <div class="form-section-title">1. File Identification & Classification</div>
+
+        <!-- Subject -->
+        <div class="form-group col-span-2">
+          <label class="form-label" for="subject">File Subject / Title *</label>
+          {{ form.subject(class="form-control", id="subject", placeholder="Brief and descriptive official subject matter", required=True) }}
+          {% if form.subject.errors %}
+            <div class="form-error">{{ form.subject.errors[0] }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Category -->
+        <div class="form-group">
+          <label class="form-label" for="category">File Category *</label>
+          {{ form.category(class="form-control", id="category", required=True) }}
+          {% if form.category.errors %}
+            <div class="form-error">{{ form.category.errors[0] }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Priority -->
+        <div class="form-group">
+          <label class="form-label" for="priority">Priority Level *</label>
+          {{ form.priority(class="form-control", id="priority", required=True) }}
+          {% if form.priority.errors %}
+            <div class="form-error">{{ form.priority.errors[0] }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Confidentiality -->
+        <div class="form-group">
+          <label class="form-label" for="confidentiality">Confidentiality Level *</label>
+          {{ form.confidentiality(class="form-control", id="confidentiality", required=True) }}
+          {% if form.confidentiality.errors %}
+            <div class="form-error">{{ form.confidentiality.errors[0] }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Due Date -->
+        <div class="form-group">
+          <label class="form-label" for="due_date">Target Action Due Date (Optional)</label>
+          {{ form.due_date(class="form-control", id="due_date", type="date") }}
+          <div class="form-text">Statutory deadline for completion or disposal.</div>
+          {% if form.due_date.errors %}
+            <div class="form-error">{{ form.due_date.errors[0] }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Section 2: Department & Custody -->
+        <div class="form-section-title">2. Departmental Routing & Custody Assignment</div>
+
+        <!-- Initiating Department -->
+        <div class="form-group">
+          <label class="form-label" for="department_id">Initiating Department *</label>
+          {{ form.department_id(class="form-control", id="department_id", required=True) }}
+          {% if form.department_id.errors %}
+            <div class="form-error">{{ form.department_id.errors[0] }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Section -->
+        <div class="form-group">
+          <label class="form-label" for="section_id">Section / Cell (Optional)</label>
+          {{ form.section_id(class="form-control", id="section_id") }}
+        </div>
+
+        <!-- Initial Assigned Officer -->
+        <div class="form-group col-span-2">
+          <label class="form-label" for="assigned_officer_id">Assign Custody To Officer *</label>
+          {{ form.assigned_officer_id(class="form-control", id="assigned_officer_id", required=True) }}
+          <div class="form-text">Select the processing officer whose desk queue will receive this file.</div>
+          {% if form.assigned_officer_id.errors %}
+            <div class="form-error">{{ form.assigned_officer_id.errors[0] }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Section 3: Notings & Attachments -->
+        <div class="form-section-title">3. Official Notings & Attachments</div>
+
+        <!-- Detailed Description -->
+        <div class="form-group col-span-2">
+          <label class="form-label" for="description">Detailed Description / Background</label>
+          {{ form.description(class="form-control", id="description", rows="3", placeholder="Detailed administrative context or preamble...") }}
+          {% if form.description.errors %}
+            <div class="form-error">{{ form.description.errors[0] }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Initial Remarks / Green Sheet Note -->
+        <div class="form-group col-span-2">
+          <label class="form-label" for="initial_remarks">Initial Noting / Remarks (Note #1)</label>
+          {{ form.initial_remarks(class="form-control", id="initial_remarks", rows="3", placeholder="Initial paragraph for green-sheet noting...") }}
+          <div class="form-text">This will be permanently recorded as Note Paragraph 1 on the file.</div>
+        </div>
+
+        <!-- Supporting Document Upload -->
+        <div class="form-group col-span-2">
+          <label class="form-label" for="document">Attach Supporting Document (Optional)</label>
+          {{ form.document(class="form-control", id="document") }}
+          <div class="form-text">Permitted formats: PDF, DOCX, DOC, XLSX, XLS, JPG, PNG (Max: 32MB).</div>
+          {% if form.document.errors %}
+            <div class="form-error">{{ form.document.errors[0] }}</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="form-action-bar">
+        <a href="{{ url_for('files.list_files') }}" class="btn btn-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary" style="padding:10px 24px; font-weight:700;">
+          Register &amp; Initiate File
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

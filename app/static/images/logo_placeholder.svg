@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+  <defs>
+    <linearGradient id="navyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f2a4a"/>
+      <stop offset="100%" stop-color="#1e3a5f"/>
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#b45309"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Outer Gold Ring -->
+  <circle cx="100" cy="100" r="94" fill="none" stroke="url(#goldGrad)" stroke-width="4"/>
+  <!-- Inner Navy Ring -->
+  <circle cx="100" cy="100" r="88" fill="url(#navyGrad)"/>
+  
+  <!-- Dashed Inner Accent -->
+  <circle cx="100" cy="100" r="80" fill="none" stroke="#fef3c7" stroke-width="1.5" stroke-dasharray="3,3" opacity="0.6"/>
+  
+  <!-- Text Ring Arc Simulation / Center Emblem -->
+  <!-- University Initials Emblem -->
+  <rect x="58" y="58" width="84" height="84" rx="10" fill="#ffffff" opacity="0.08"/>
+  <rect x="62" y="62" width="76" height="76" rx="8" fill="none" stroke="url(#goldGrad)" stroke-width="2"/>
+  
+  <!-- University Name Banner Top -->
+  <text x="100" y="38" font-family="'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="9" font-weight="700" fill="#f8fafc" text-anchor="middle" letter-spacing="1.5">BBMKU DHANBAD</text>
+  
+  <!-- Central Official Badge Monogram -->
+  <text x="100" y="98" font-family="'Segoe UI', Georgia, serif" font-size="24" font-weight="900" fill="#f59e0b" text-anchor="middle" letter-spacing="2">BBMKU</text>
+  <text x="100" y="115" font-family="'Segoe UI', Roboto, sans-serif" font-size="7.5" font-weight="600" fill="#cbd5e1" text-anchor="middle" letter-spacing="1">ESTD. 2017</text>
+  
+  <!-- University Motto in Sanskrit -->
+  <text x="100" y="130" font-family="'Segoe UI', sans-serif" font-size="8.5" font-weight="600" fill="#fde68a" text-anchor="middle">ज्ञानं विज्ञान सहितम्</text>
+
+  <!-- Clear Placeholder Label as explicitly requested -->
+  <rect x="25" y="152" width="150" height="20" rx="4" fill="#0b1b2f" stroke="#f59e0b" stroke-width="1"/>
+  <text x="100" y="165" font-family="'Segoe UI', Roboto, sans-serif" font-size="6.8" font-weight="700" fill="#ffffff" text-anchor="middle" letter-spacing="0.5">[ OFFICIAL SEAL PLACEHOLDER ]</text>
+</svg>

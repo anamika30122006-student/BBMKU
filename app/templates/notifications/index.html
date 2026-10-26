@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+{% block title %}Notifications — BBMKU UFMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2 class="page-title">Notification Center</h2>
+    <div class="page-subtitle">Real-time alerts regarding new file assignments, forwardings, approvals, returns, and SLA reminders</div>
+  </div>
+  {% if unread_notifications_count > 0 %}
+  <form method="POST" action="{{ url_for('notifications.mark_all_read') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="btn btn-secondary btn-sm">
+      Mark All as Read
+    </button>
+  </form>
+  {% endif %}
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">Your Alerts ({{ pagination.total }})</div>
+    <div style="font-size:12px; color:var(--text-muted);">Page {{ pagination.page }} of {{ pagination.pages or 1 }}</div>
+  </div>
+  <div class="card-body" style="padding:0;">
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th style="width:50px;">Status</th>
+            <th>Notification</th>
+            <th>Type</th>
+            <th>Timestamp</th>
+            <th style="text-align:right;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if notifications %}
+            {% for n in notifications %}
+            <tr style="{% if not n.is_read %}background-color:#f0fdf4; font-weight:500;{% endif %}">
+              <td style="text-align:center;">
+                {% if not n.is_read %}
+                <span style="display:inline-block; width:8px; height:8px; background:#2563eb; border-radius:50%;" title="Unread"></span>
+                {% else %}
+                <span style="color:#94a3b8; font-size:11px;">Read</span>
+                {% endif %}
+              </td>
+              <td>
+                <div style="font-size:14px; color:var(--navy-primary); font-weight:700;">{{ n.title }}</div>
+                <div style="font-size:13px; color:var(--text-main); margin-top:2px;">{{ n.message }}</div>
+              </td>
+              <td>
+                <span class="badge badge-default">{{ n.notification_type }}</span>
+              </td>
+              <td style="font-size:12px; color:var(--text-muted); white-space:nowrap;">
+                {{ n.created_at|format_datetime }}
+              </td>
+              <td style="text-align:right; white-space:nowrap;">
+                {% if n.file_id %}
+                <form method="POST" action="{{ url_for('notifications.mark_read', notification_id=n.id) }}" style="display:inline;">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="btn btn-primary btn-sm">
+                    Open File &rarr;
+                  </button>
+                </form>
+                {% elif not n.is_read %}
+                <form method="POST" action="{{ url_for('notifications.mark_read', notification_id=n.id) }}" style="display:inline;">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="btn btn-secondary btn-sm">
+                    Mark Read
+                  </button>
+                </form>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="5" style="text-align:center; padding:32px; color:var(--text-muted);">
+                You have no notifications right now.
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Pagination -->
+{% if pagination.pages > 1 %}
+<ul class="pagination">
+  <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+    <a class="page-link" href="{{ url_for('notifications.index', page=pagination.prev_num) }}">&laquo; Previous</a>
+  </li>
+  {% for page_num in pagination.iter_pages(left_edge=2, left_current=2, right_current=3, right_edge=2) %}
+    {% if page_num %}
+      <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
+        <a class="page-link" href="{{ url_for('notifications.index', page=page_num) }}">{{ page_num }}</a>
+      </li>
+    {% else %}
+      <li class="page-item disabled"><span class="page-link">…</span></li>
+    {% endif %}
+  {% endfor %}
+  <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+    <a class="page-link" href="{{ url_for('notifications.index', page=pagination.next_num) }}">Next &raquo;</a>
+  </li>
+</ul>
+{% endif %}
+{% endblock %}

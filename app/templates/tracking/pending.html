@@ -1,0 +1,191 @@
+{% extends 'base.html' %}
+{% block title %}Pending Files & Delay Tracking — BBMKU File Tracking System{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2 class="page-title">Pending Files & Delay Tracking</h2>
+    <div class="page-subtitle">Monitors files awaiting action categorized by SLA turnaround thresholds and overdue criteria</div>
+  </div>
+  {% if current_user.has_permission('export_reports') %}
+  <a href="{{ url_for('reports.export_csv', type='pending_files') }}" class="btn btn-secondary">
+    Export Pending CSV
+  </a>
+  {% endif %}
+</div>
+
+<!-- Delay Filter Tabs (Swipeable App Pill Bar) -->
+<div class="app-filter-tabs">
+  <a href="{{ url_for('tracking.pending_files', filter='all') }}" class="app-filter-tab {% if filter_type == 'all' %}active{% endif %}">
+    All Pending ({{ pagination.total }})
+  </a>
+  <a href="{{ url_for('tracking.pending_files', filter='today') }}" class="app-filter-tab {% if filter_type == 'today' %}active{% endif %}">
+    Today (&le;1d)
+  </a>
+  <a href="{{ url_for('tracking.pending_files', filter='gt3') }}" class="app-filter-tab {% if filter_type == 'gt3' %}active{% endif %}">
+    &gt; 3 Days
+  </a>
+  <a href="{{ url_for('tracking.pending_files', filter='gt7') }}" class="app-filter-tab {% if filter_type == 'gt7' %}active{% endif %}">
+    &gt; 7 Days (Critical)
+  </a>
+  <a href="{{ url_for('tracking.pending_files', filter='gt15') }}" class="app-filter-tab {% if filter_type == 'gt15' %}active{% endif %}">
+    &gt; 15 Days
+  </a>
+  <a href="{{ url_for('tracking.pending_files', filter='overdue') }}" class="app-filter-tab danger-pill {% if filter_type == 'overdue' %}active-danger{% endif %}">
+    Overdue Files Only
+  </a>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">Pending Files ({{ pagination.total }})</div>
+    <div style="font-size:12px; color:var(--text-muted);">Page {{ pagination.page }} of {{ pagination.pages or 1 }}</div>
+  </div>
+  <div class="card-body" style="padding:0;">
+    <!-- Desktop Table View -->
+    <div class="table-responsive d-none-mobile">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>File Number</th>
+            <th>Subject</th>
+            <th>Department</th>
+            <th>Current Officer</th>
+            <th>Assigned Date</th>
+            <th>Pending Days</th>
+            <th>Total Age</th>
+            <th>Due Date</th>
+            <th>Delay Category</th>
+            <th>Next Action</th>
+            <th style="text-align:right;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if files %}
+            {% for f in files %}
+            <tr>
+              <td class="table-file-number">
+                <a href="{{ url_for('files.detail', file_id=f.id) }}">
+                  {{ f.file_number }}
+                </a>
+              </td>
+              <td style="max-width:240px; font-weight:600;">
+                <a href="{{ url_for('files.detail', file_id=f.id) }}" style="color:var(--text-primary);">
+                  {{ f.subject }}
+                </a>
+              </td>
+              <td>{{ f.current_department.code if f.current_department else 'Central' }}</td>
+              <td>
+                <div style="font-weight:600;">{{ f.current_officer.full_name }}</div>
+                <div style="font-size:11px; color:var(--text-muted);">{{ f.current_officer.designation }}</div>
+              </td>
+              <td style="font-size:12px;">{{ f.assigned_at|format_date }}</td>
+              <td>
+                <span class="delay-badge {{ f.delay_status|delay_badge }}">
+                  {{ f.pending_days }} days
+                </span>
+              </td>
+              <td style="font-size:12px; color:var(--text-muted);">{{ f.total_age_days }} d</td>
+              <td style="font-size:12px; font-weight:600; color:{% if f.is_overdue %}#dc2626{% else %}var(--brand-navy){% endif %};">
+                {{ f.due_date|format_date if f.due_date else 'None' }}
+              </td>
+              <td>
+                <span class="delay-badge {{ f.delay_status|delay_badge }}">{{ f.delay_status }}</span>
+              </td>
+              <td style="font-size:11.5px; color:var(--text-muted); max-width:160px;">
+                {{ f.next_expected_action or 'Action by Officer' }}
+              </td>
+              <td style="text-align:right; white-space:nowrap;">
+                <a href="{{ url_for('files.detail', file_id=f.id) }}" class="btn btn-primary btn-sm">
+                  View File
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="11" style="text-align:center; padding:32px; color:var(--text-muted);">
+                No files found under the selected delay threshold.
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Mobile Native Pending Cards -->
+    <div class="mobile-file-cards d-only-mobile">
+      {% if files %}
+        {% for f in files %}
+        <div class="mobile-file-card" style="border-left: 3px solid {% if f.is_overdue %}#dc2626{% elif f.pending_days > 7 %}#ea580c{% elif f.pending_days > 3 %}#f59e0b{% else %}#2563eb{% endif %};">
+          <div class="mfc-header">
+            <a href="{{ url_for('files.detail', file_id=f.id) }}" class="table-file-number">
+              {{ f.file_number }}
+            </a>
+            <span class="delay-badge {{ f.delay_status|delay_badge }}">
+              {{ f.pending_days }}d pending
+            </span>
+          </div>
+          <a href="{{ url_for('files.detail', file_id=f.id) }}" class="mfc-subject">
+            {{ f.subject }}
+          </a>
+          <div class="mfc-meta-row">
+            <div>
+              <span class="mfc-label">Custodian:</span>
+              <strong style="color:#0f172a;">{{ f.current_officer.full_name }}</strong>
+            </div>
+            <div>
+              <span class="mfc-label">Dept:</span>
+              <span class="mdi-code">{{ f.current_department.code if f.current_department else 'Central' }}</span>
+            </div>
+          </div>
+          <div class="mfc-meta-row" style="background:#ffffff; border:1px solid #cbd5e1;">
+            <div>
+              <span class="mfc-label">Action Target:</span>
+              <strong style="color:{% if f.is_overdue %}#dc2626{% else %}#0f172a{% endif %};">
+                {{ f.due_date|format_date if f.due_date else 'No Due Date Set' }}
+              </strong>
+            </div>
+            <div>
+              <span class="mfc-label">Age:</span>
+              <strong style="color:#334155;">{{ f.total_age_days }} days</strong>
+            </div>
+          </div>
+          <div class="mfc-footer">
+            <span class="delay-badge {{ f.delay_status|delay_badge }}" style="font-weight:700;">{{ f.delay_status }}</span>
+            <a href="{{ url_for('files.detail', file_id=f.id) }}" class="btn btn-primary btn-sm" style="font-weight:700; padding:7px 16px;">
+              View File &rarr;
+            </a>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div style="text-align:center; padding:24px; color:var(--text-muted); font-size:13px;">
+          No files found under the selected delay threshold.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Pagination -->
+{% if pagination.pages > 1 %}
+<ul class="pagination">
+  <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+    <a class="page-link" href="{{ url_for('tracking.pending_files', page=pagination.prev_num, filter=filter_type) }}">&laquo; Previous</a>
+  </li>
+  {% for page_num in pagination.iter_pages(left_edge=2, left_current=2, right_current=3, right_edge=2) %}
+    {% if page_num %}
+      <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
+        <a class="page-link" href="{{ url_for('tracking.pending_files', page=page_num, filter=filter_type) }}">{{ page_num }}</a>
+      </li>
+    {% else %}
+      <li class="page-item disabled"><span class="page-link">…</span></li>
+    {% endif %}
+  {% endfor %}
+  <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+    <a class="page-link" href="{{ url_for('tracking.pending_files', page=pagination.next_num, filter=filter_type) }}">Next &raquo;</a>
+  </li>
+</ul>
+{% endif %}
+{% endblock %}

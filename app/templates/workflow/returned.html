@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+{% block title %}Files Returned for Correction — BBMKU UFMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2 class="page-title">Files Returned for Correction</h2>
+    <div class="page-subtitle">University files sent back to officers or dealing assistants with specific queries or rectification instructions</div>
+  </div>
+  {% if current_user.has_permission('export_reports') %}
+  <a href="{{ url_for('reports.export_csv', type='returned_files') }}" class="btn btn-secondary">
+    Export CSV
+  </a>
+  {% endif %}
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">Files Awaiting Rectification ({{ pagination.total }})</div>
+    <div style="font-size:12px; color:var(--text-muted);">Page {{ pagination.page }} of {{ pagination.pages or 1 }}</div>
+  </div>
+  <div class="card-body" style="padding:0;">
+    <!-- Desktop Table View -->
+    <div class="table-responsive d-none-mobile">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>File Number</th>
+            <th>Subject</th>
+            <th>Department</th>
+            <th>Responsible Custodian</th>
+            <th>Last Action Date</th>
+            <th>Rectification Directives</th>
+            <th style="text-align:right;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if files %}
+            {% for f in files %}
+            <tr>
+              <td class="table-file-number">
+                <a href="{{ url_for('files.detail', file_id=f.id) }}" style="color:var(--navy-primary);">
+                  {{ f.file_number }}
+                </a>
+              </td>
+              <td style="max-width:260px; font-weight:600;">
+                <a href="{{ url_for('files.detail', file_id=f.id) }}" style="color:var(--text-main);">
+                  {{ f.subject }}
+                </a>
+              </td>
+              <td>{{ f.current_department.code if f.current_department else 'Central' }}</td>
+              <td>
+                <div style="font-weight:600;">{{ f.current_officer.full_name }}</div>
+                <div style="font-size:11px; color:var(--text-muted);">{{ f.current_officer.designation }}</div>
+              </td>
+              <td style="font-size:12px;">{{ f.last_action_at|format_date }}</td>
+              <td style="font-size:12.5px; max-width:280px; color:#c2410c;">
+                {{ f.last_action_remarks or 'Correction instructions recorded in file details' }}
+              </td>
+              <td style="text-align:right; white-space:nowrap;">
+                <a href="{{ url_for('files.detail', file_id=f.id) }}" class="btn btn-primary btn-sm">
+                  Open File & Correct &rarr;
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="7" style="text-align:center; padding:32px; color:var(--text-muted);">
+                No files are currently returned for correction.
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Mobile Native File Cards -->
+    <div class="mobile-file-cards d-only-mobile">
+      {% if files %}
+        {% for f in files %}
+        <div class="mobile-file-card" style="border-left: 3px solid #f59e0b;">
+          <div class="mfc-header">
+            <a href="{{ url_for('files.detail', file_id=f.id) }}" class="table-file-number">
+              {{ f.file_number }}
+            </a>
+            <span class="badge badge-returned">Returned</span>
+          </div>
+          <a href="{{ url_for('files.detail', file_id=f.id) }}" class="mfc-subject">
+            {{ f.subject }}
+          </a>
+          <div class="mfc-meta-row">
+            <div>
+              <span class="mfc-label">Custodian:</span>
+              <strong style="color:#0f172a;">{{ f.current_officer.full_name }}</strong>
+            </div>
+            <div>
+              <span class="mfc-label">Dept:</span>
+              <span class="mdi-code">{{ f.current_department.code if f.current_department else 'Central' }}</span>
+            </div>
+          </div>
+          {% if f.last_action_remarks %}
+          <div style="font-size:13px; color:#9a3412; background:#fff7ed; padding:10px 12px; border-radius:var(--radius-sm); border:1px solid #fed7aa; word-break:break-word; line-height:1.45;">
+            <strong style="display:block; font-size:11px; text-transform:uppercase; color:#c2410c; margin-bottom:3px;">Rectification Directives:</strong>
+            {{ f.last_action_remarks }}
+          </div>
+          {% endif %}
+          <div class="mfc-footer">
+            <span style="font-size:12px; color:#475569; font-weight:500;">{{ f.last_action_at|format_date }}</span>
+            <a href="{{ url_for('files.detail', file_id=f.id) }}" class="btn btn-primary btn-sm" style="font-weight:700; padding:7px 16px;">
+              Open File & Correct &rarr;
+            </a>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div style="text-align:center; padding:24px; color:var(--text-muted); font-size:13px;">
+          No files are currently returned for correction.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Pagination -->
+{% if pagination.pages > 1 %}
+<ul class="pagination">
+  <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+    <a class="page-link" href="{{ url_for('workflow_views.returned_files', page=pagination.prev_num) }}">&laquo; Previous</a>
+  </li>
+  {% for page_num in pagination.iter_pages(left_edge=2, left_current=2, right_current=3, right_edge=2) %}
+    {% if page_num %}
+      <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
+        <a class="page-link" href="{{ url_for('workflow_views.returned_files', page=page_num) }}">{{ page_num }}</a>
+      </li>
+    {% else %}
+      <li class="page-item disabled"><span class="page-link">…</span></li>
+    {% endif %}
+  {% endfor %}
+  <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+    <a class="page-link" href="{{ url_for('workflow_views.returned_files', page=pagination.next_num) }}">Next &raquo;</a>
+  </li>
+</ul>
+{% endif %}
+{% endblock %}

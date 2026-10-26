@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+{% block title %}Reports & Analytics - BBMKU File Tracking System{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2 class="page-title">Administrative Reports & Analytics</h2>
+    <div class="page-subtitle">Standardized departmental and operational file reports generated directly from database</div>
+  </div>
+</div>
+
+<!-- Key Performance Indicators -->
+<div class="metrics-strip">
+  <div class="metric-mini-box">
+    <div class="metric-mini-label">Total Files</div>
+    <div class="metric-mini-val">{{ metrics.total_files }}</div>
+  </div>
+  <div class="metric-mini-box" style="border-left:3px solid #2563eb;">
+    <div class="metric-mini-label">Pending Files</div>
+    <div class="metric-mini-val" style="color:#2563eb;">{{ metrics.pending_files }}</div>
+  </div>
+  <div class="metric-mini-box" style="border-left:3px solid #dc2626;">
+    <div class="metric-mini-label">Overdue Files</div>
+    <div class="metric-mini-val" style="color:#dc2626;">{{ metrics.overdue_files }}</div>
+  </div>
+  <div class="metric-mini-box" style="border-left:3px solid #059669;">
+    <div class="metric-mini-label">Avg Processing Time</div>
+    <div class="metric-mini-val" style="color:#059669;">{{ avg_processing_days }} days</div>
+  </div>
+</div>
+
+<!-- Reports Hub -->
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">Standard University Reports (CSV Exports)</h3>
+    <span style="font-size:12px; color:var(--text-muted);">Download official data generated from database</span>
+  </div>
+  <div class="card-body">
+    <div class="reports-cards-grid">
+      
+      <!-- 1. Pending Files (Primary flowchart item) -->
+      <div style="background:#f8fafc; border:1px solid var(--border-light); border-radius:var(--radius-sm); padding:14px; border-left:3px solid #2563eb;">
+        <div style="font-weight:700; color:var(--brand-navy); font-size:13.5px;">Pending Files Report</div>
+        <div style="font-size:11.5px; color:var(--text-muted); margin:3px 0 10px;">Active files in custody of officers with pending durations and expected actions.</div>
+        <a href="{{ url_for('reports.export_csv', type='pending_files') }}" class="btn btn-primary btn-sm">Export CSV</a>
+      </div>
+
+      <!-- 2. Completed / Closed Files (Primary flowchart item) -->
+      <div style="background:#f8fafc; border:1px solid var(--border-light); border-radius:var(--radius-sm); padding:14px; border-left:3px solid #059669;">
+        <div style="font-weight:700; color:#065f46; font-size:13.5px;">Completed & Closed Files</div>
+        <div style="font-size:11.5px; color:var(--text-muted); margin:3px 0 10px;">Fully disposed files with closure orders and archival references.</div>
+        <a href="{{ url_for('reports.export_csv', type='closed_archived') }}" class="btn btn-secondary btn-sm">Export CSV</a>
+      </div>
+
+      <!-- 3. Department-wise Summary (Primary flowchart item) -->
+      <div style="background:#f8fafc; border:1px solid var(--border-light); border-radius:var(--radius-sm); padding:14px; border-left:3px solid var(--brand-navy);">
+        <div style="font-weight:700; color:var(--brand-navy); font-size:13.5px;">Department-wise Pending Summary</div>
+        <div style="font-size:11.5px; color:var(--text-muted); margin:3px 0 10px;">Comparative departmental backlog breakdown for Executive Council monitoring.</div>
+        <a href="{{ url_for('reports.export_csv', type='department_pending') }}" class="btn btn-secondary btn-sm">Export CSV</a>
+      </div>
+
+      <!-- 4. Total Registered Files -->
+      <div style="background:#f8fafc; border:1px solid var(--border-light); border-radius:var(--radius-sm); padding:14px;">
+        <div style="font-weight:700; color:var(--brand-navy); font-size:13.5px;">Total Registered Files</div>
+        <div style="font-size:11.5px; color:var(--text-muted); margin:3px 0 10px;">Full university catalog of registered files across all 15 departments.</div>
+        <a href="{{ url_for('reports.export_csv', type='total_files') }}" class="btn btn-secondary btn-sm">Export CSV</a>
+      </div>
+
+      <!-- 5. Overdue / Delayed Files -->
+      <div style="background:#f8fafc; border:1px solid var(--border-light); border-radius:var(--radius-sm); padding:14px; border-left:3px solid #dc2626;">
+        <div style="font-weight:700; color:#991b1b; font-size:13.5px;">Overdue & Delayed Files</div>
+        <div style="font-size:11.5px; color:var(--text-muted); margin:3px 0 10px;">Files that breached target due date or exceeded SLA thresholds.</div>
+        <a href="{{ url_for('reports.export_csv', type='overdue_files') }}" class="btn btn-danger btn-sm">Export CSV</a>
+      </div>
+
+      <!-- 6. Officer-wise Workload -->
+      <div style="background:#f8fafc; border:1px solid var(--border-light); border-radius:var(--radius-sm); padding:14px;">
+        <div style="font-weight:700; color:var(--brand-navy); font-size:13.5px;">Officer-wise Custody Workload</div>
+        <div style="font-size:11.5px; color:var(--text-muted); margin:3px 0 10px;">Active file distribution across individual administrative officers.</div>
+        <a href="{{ url_for('reports.export_csv', type='officer_pending') }}" class="btn btn-secondary btn-sm">Export CSV</a>
+      </div>
+
+      <!-- 7. Decision & Approval Records -->
+      <div style="background:#f8fafc; border:1px solid var(--border-light); border-radius:var(--radius-sm); padding:14px;">
+        <div style="font-weight:700; color:var(--brand-navy); font-size:13.5px;">Approvals & Sanctions Register</div>
+        <div style="font-size:11.5px; color:var(--text-muted); margin:3px 0 10px;">Formal decision log of sanctioned files, conditions, and rejections.</div>
+        <a href="{{ url_for('reports.export_csv', type='decisions') }}" class="btn btn-secondary btn-sm">Export CSV</a>
+      </div>
+
+      <!-- 8. Returned Files Report -->
+      <div style="background:#f8fafc; border:1px solid var(--border-light); border-radius:var(--radius-sm); padding:14px;">
+        <div style="font-weight:700; color:#b45309; font-size:13.5px;">Returned Files & Correction Queries</div>
+        <div style="font-size:11.5px; color:var(--text-muted); margin:3px 0 10px;">Files sent back with correction instructions to previous departments.</div>
+        <a href="{{ url_for('reports.export_csv', type='returned_files') }}" class="btn btn-warning btn-sm">Export CSV</a>
+      </div>
+
+      <!-- 9. Full Movement History -->
+      <div style="background:#f8fafc; border:1px solid var(--border-light); border-radius:var(--radius-sm); padding:14px;">
+        <div style="font-weight:700; color:var(--brand-navy); font-size:13.5px;">File Movement Audit Trail</div>
+        <div style="font-size:11.5px; color:var(--text-muted); margin:3px 0 10px;">Complete history of dispatches, transit modes, and acknowledgment dates.</div>
+        <a href="{{ url_for('reports.export_csv', type='movement_history') }}" class="btn btn-secondary btn-sm">Export CSV</a>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Officer Custody Summary Table -->
+<div class="card">
+  <div class="card-header">
+    <div>
+      <h3 class="card-title">Officer Desk Workload</h3>
+      <span style="font-size:12px; color:var(--text-muted);">Current active file distribution across officer desks</span>
+    </div>
+  </div>
+  <div class="card-body" style="padding:0;">
+    <!-- Desktop Table View -->
+    <div class="table-responsive d-none-mobile">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Officer Name</th>
+            <th>Designation</th>
+            <th>Department</th>
+            <th style="text-align:right;">Active Files in Desk Queue</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if officer_pending %}
+            {% for o in officer_pending %}
+            <tr>
+              <td><strong>{{ o.full_name }}</strong></td>
+              <td>{{ o.designation }}</td>
+              <td>{{ o.department_name or 'Central Administration' }}</td>
+              <td style="text-align:right;">
+                <span class="delay-badge delay-warning" style="font-weight:700;">
+                  {{ o.pending_count }} files
+                </span>
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="4" style="text-align:center; padding:18px; color:var(--text-muted);">No officers currently holding pending files.</td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Mobile Officer Workload List (App Style) -->
+    <div class="mobile-workload-list d-only-mobile">
+      {% if officer_pending %}
+        {% for o in officer_pending %}
+        <div class="workload-officer-card">
+          <div class="woc-avatar">
+            {{ o.full_name[:1] }}
+          </div>
+          <div class="woc-info">
+            <div class="woc-name">{{ o.full_name }}</div>
+            <div class="woc-desig">{{ o.designation }}</div>
+            <div class="woc-dept">{{ o.department_name or 'Central Administration' }}</div>
+          </div>
+          <div class="woc-badge">
+            <span class="delay-badge delay-warning" style="font-weight:700; white-space:nowrap;">
+              {{ o.pending_count }} files
+            </span>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div style="text-align:center; padding:20px 14px; color:var(--text-muted); font-size:13px;">
+          No officers currently holding pending files.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

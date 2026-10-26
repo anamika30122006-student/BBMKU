@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block title %}403 Forbidden — Access Denied{% endblock %}
+
+{% block content %}
+<div style="text-align:center; padding:60px 20px;">
+  <div style="font-size:64px; color:#b91c1c; font-weight:900;">403</div>
+  <h2 style="font-size:22px; color:var(--navy-primary); margin:12px 0;">Access Denied / Insufficient Administrative Privileges</h2>
+  <p style="color:var(--text-muted); max-width:540px; margin:0 auto 24px;">
+    You do not possess the required statutory role or authorization to access this university file or perform this action. If you believe this is in error, contact the Registrar's Secretariat or UFMS System Cell.
+  </p>
+  <a href="{{ url_for('dashboard.index') }}" class="btn btn-primary">
+    &larr; Return to Executive Dashboard
+  </a>
+</div>
+{% endblock %}

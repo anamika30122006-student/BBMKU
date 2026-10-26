@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block title %}500 Internal Error — BBMKU UFMS{% endblock %}
+
+{% block content %}
+<div style="text-align:center; padding:60px 20px;">
+  <div style="font-size:64px; color:#dc2626; font-weight:900;">500</div>
+  <h2 style="font-size:22px; color:var(--navy-primary); margin:12px 0;">Internal System Processing Error</h2>
+  <p style="color:var(--text-muted); max-width:540px; margin:0 auto 24px;">
+    An unexpected error occurred while communicating with the database. The transaction was safely rolled back. Please try again or notify the System Administrator.
+  </p>
+  <a href="{{ url_for('dashboard.index') }}" class="btn btn-primary">
+    &larr; Return to Dashboard
+  </a>
+</div>
+{% endblock %}

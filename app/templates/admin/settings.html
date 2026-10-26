@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% block title %}System Settings & SLA Thresholds — BBMKU UFMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2 class="page-title">System Settings & SLA Thresholds</h2>
+    <div class="page-subtitle">Configure administrative turnaround benchmarks, delay warnings, and university identity</div>
+  </div>
+</div>
+
+<div class="card" style="max-width:800px;">
+  <div class="card-header">
+    <h3 class="card-title">Turnaround Service Level Agreement (SLA) & Delay Rules</h3>
+  </div>
+  <div class="card-body">
+    <form method="POST" action="{{ url_for('admin.settings') }}">
+      {{ form.hidden_tag() }}
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label" for="sla_warning_days">SLA Warning Delay Threshold (Days) *</label>
+          {{ form.sla_warning_days(class="form-control", id="sla_warning_days", required=True) }}
+          <div class="form-text">Files pending with an officer beyond this will display a yellow "Delayed" badge. Default: 3 days.</div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="sla_critical_days">SLA Critical Delay Threshold (Days) *</label>
+          {{ form.sla_critical_days(class="form-control", id="sla_critical_days", required=True) }}
+          <div class="form-text">Files pending with an officer beyond this will display an orange "Critical Delay" badge. Default: 7 days.</div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="sla_overdue_days">Default Overdue Threshold (Days) *</label>
+          {{ form.sla_overdue_days(class="form-control", id="sla_overdue_days", required=True) }}
+          <div class="form-text">If a file has no explicit due date, it is marked "Overdue" when pending exceeds this limit. Default: 15 days.</div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="university_code">University Code *</label>
+          {{ form.university_code(class="form-control", id="university_code", required=True) }}
+          <div class="form-text">Used as prefix in file registry numbers (e.g. BBMKU).</div>
+        </div>
+
+        <div class="form-group col-span-2">
+          <label class="form-label" for="university_name">Official University Name *</label>
+          {{ form.university_name(class="form-control", id="university_name", required=True) }}
+        </div>
+      </div>
+
+      <div style="margin-top:20px; padding-top:16px; border-top:1px solid var(--border-light); display:flex; justify-content:flex-end;">
+        <button type="submit" class="btn btn-primary">Save Configuration Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

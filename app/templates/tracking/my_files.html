@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+{% block title %}My Desk Queue — BBMKU File Tracking System{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2 class="page-title">My Assigned Files (In My Custody)</h2>
+    <div class="page-subtitle">Active university files currently assigned to your office desk for action</div>
+  </div>
+  {% if current_user.has_permission('create_file') %}
+  <a href="{{ url_for('files.create') }}" class="btn btn-primary">
+    Register New File
+  </a>
+  {% endif %}
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">Files in Your Official Queue ({{ pagination.total }})</div>
+    <div style="font-size:12px; color:var(--text-muted);">Page {{ pagination.page }} of {{ pagination.pages or 1 }}</div>
+  </div>
+  <div class="card-body" style="padding:0;">
+    <!-- Desktop Table View -->
+    <div class="table-responsive d-none-mobile">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>File Number</th>
+            <th>Subject</th>
+            <th>Category</th>
+            <th>Priority</th>
+            <th>Received Date</th>
+            <th>Days With You</th>
+            <th>Status</th>
+            <th>Due Date</th>
+            <th style="text-align:right;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if files %}
+            {% for f in files %}
+            <tr>
+              <td class="table-file-number">
+                <a href="{{ url_for('files.detail', file_id=f.id) }}">
+                  {{ f.file_number }}
+                </a>
+              </td>
+              <td style="max-width:280px; font-weight:600;">
+                <a href="{{ url_for('files.detail', file_id=f.id) }}" style="color:var(--text-primary);">
+                  {{ f.subject }}
+                </a>
+              </td>
+              <td>{{ f.category }}</td>
+              <td>
+                <span class="priority-badge {{ f.priority|priority_badge }}">{{ f.priority }}</span>
+              </td>
+              <td style="font-size:12px;">{{ f.assigned_at|format_date }}</td>
+              <td>
+                <span class="delay-badge {{ f.delay_status|delay_badge }}">
+                  {{ f.pending_days }} days
+                </span>
+              </td>
+              <td>
+                <span class="badge {{ f.status|status_badge }}">{{ f.status }}</span>
+              </td>
+              <td style="font-size:12px; font-weight:600; color:{% if f.is_overdue %}#dc2626{% else %}var(--brand-navy){% endif %};">
+                {{ f.due_date|format_date if f.due_date else 'None' }}
+              </td>
+              <td style="text-align:right; white-space:nowrap;">
+                <a href="{{ url_for('files.detail', file_id=f.id) }}" class="btn btn-primary btn-sm">
+                  Open File
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="9" style="text-align:center; padding:32px; color:var(--text-muted);">
+                There are no pending files in your assigned queue right now.
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Mobile File Card List (Phone Native) -->
+    <div class="mobile-file-cards d-only-mobile">
+      {% if files %}
+        {% for f in files %}
+        <div class="mobile-file-card">
+          <div class="mfc-header">
+            <a href="{{ url_for('files.detail', file_id=f.id) }}" class="table-file-number">
+              {{ f.file_number }}
+            </a>
+            <span class="delay-badge {{ f.delay_status|delay_badge }}">
+              {{ f.pending_days }}d with you
+            </span>
+          </div>
+
+          <a href="{{ url_for('files.detail', file_id=f.id) }}" class="mfc-subject">
+            {{ f.subject }}
+          </a>
+
+          <div class="mfc-meta-row">
+            <div>
+              <span class="mfc-label">Category:</span>
+              <strong>{{ f.category }}</strong>
+            </div>
+            <div>
+              <span class="priority-badge {{ f.priority|priority_badge }}">{{ f.priority }}</span>
+            </div>
+          </div>
+
+          <div class="mfc-footer">
+            <span class="badge {{ f.status|status_badge }}">{{ f.status }}</span>
+            <a href="{{ url_for('files.detail', file_id=f.id) }}" class="btn btn-primary btn-sm">
+              Open File &rarr;
+            </a>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div style="text-align:center; padding:24px; color:var(--text-muted); font-size:13px;">
+          There are no pending files in your assigned queue right now.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Pagination -->
+{% if pagination.pages > 1 %}
+<ul class="pagination">
+  <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+    <a class="page-link" href="{{ url_for('tracking.my_files', page=pagination.prev_num) }}">&laquo; Previous</a>
+  </li>
+  {% for page_num in pagination.iter_pages(left_edge=2, left_current=2, right_current=3, right_edge=2) %}
+    {% if page_num %}
+      <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
+        <a class="page-link" href="{{ url_for('tracking.my_files', page=page_num) }}">{{ page_num }}</a>
+      </li>
+    {% else %}
+      <li class="page-item disabled"><span class="page-link">…</span></li>
+    {% endif %}
+  {% endfor %}
+  <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+    <a class="page-link" href="{{ url_for('tracking.my_files', page=pagination.next_num) }}">Next &raquo;</a>
+  </li>
+</ul>
+{% endif %}
+{% endblock %}

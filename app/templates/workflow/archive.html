@@ -1,0 +1,147 @@
+{% extends 'base.html' %}
+{% block title %}University Central File Archive — BBMKU UFMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2 class="page-title">University Central Record Archive</h2>
+    <div class="page-subtitle">Preserved permanent university records with verified physical shelf & room locations</div>
+  </div>
+  {% if current_user.has_permission('export_reports') %}
+  <a href="{{ url_for('reports.export_csv', type='closed_archived') }}" class="btn btn-secondary">
+    Export Archive (CSV)
+  </a>
+  {% endif %}
+</div>
+
+<!-- Search Archives -->
+<div class="filter-bar">
+  <form method="GET" action="{{ url_for('workflow_views.archive') }}" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+    <input type="text" name="search" value="{{ search or '' }}" class="form-control" placeholder="Search archive records by file number, subject, or rack location..." style="flex:1 1 200px;">
+    <button type="submit" class="btn btn-primary">Search Archive</button>
+    {% if search %}
+    <a href="{{ url_for('workflow_views.archive') }}" class="btn btn-secondary">Clear</a>
+    {% endif %}
+  </form>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">Archived Records ({{ pagination.total }})</div>
+    <div style="font-size:12px; color:var(--text-muted);">Page {{ pagination.page }} of {{ pagination.pages or 1 }}</div>
+  </div>
+  <div class="card-body" style="padding:0;">
+    <!-- Desktop Table View -->
+    <div class="table-responsive d-none-mobile">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>File Number</th>
+            <th>Subject</th>
+            <th>Category</th>
+            <th>Physical Archive Location</th>
+            <th>Archived Date</th>
+            <th>Archived By</th>
+            <th style="text-align:right;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if files %}
+            {% for f in files %}
+            <tr>
+              <td class="table-file-number">
+                <a href="{{ url_for('files.detail', file_id=f.id) }}" style="color:var(--navy-primary);">
+                  {{ f.file_number }}
+                </a>
+              </td>
+              <td style="max-width:280px; font-weight:600;">
+                <a href="{{ url_for('files.detail', file_id=f.id) }}" style="color:var(--text-main);">
+                  {{ f.subject }}
+                </a>
+              </td>
+              <td>{{ f.category }}</td>
+              <td>
+                <strong style="color:var(--navy-primary);">{{ f.archived_location or 'Central Record Repository' }}</strong>
+              </td>
+              <td style="font-size:12px;">{{ f.archived_date|format_date }}</td>
+              <td>{{ f.archived_by.full_name if f.archived_by else 'UFMS Archive Cell' }}</td>
+              <td style="text-align:right; white-space:nowrap;">
+                <a href="{{ url_for('files.detail', file_id=f.id) }}" class="btn btn-secondary btn-sm">
+                  View Record
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="7" style="text-align:center; padding:32px; color:var(--text-muted);">
+                No archived records found matching the query.
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Mobile Native File Cards -->
+    <div class="mobile-file-cards d-only-mobile">
+      {% if files %}
+        {% for f in files %}
+        <div class="mobile-file-card" style="border-left: 3px solid #475569;">
+          <div class="mfc-header">
+            <a href="{{ url_for('files.detail', file_id=f.id) }}" class="table-file-number">
+              {{ f.file_number }}
+            </a>
+            <span class="badge badge-archived">Archived</span>
+          </div>
+          <a href="{{ url_for('files.detail', file_id=f.id) }}" class="mfc-subject">
+            {{ f.subject }}
+          </a>
+          <div class="mfc-meta-row">
+            <div>
+              <span class="mfc-label">Shelf:</span>
+              <strong>{{ f.archived_location or 'Record Room' }}</strong>
+            </div>
+            <div>
+              <span class="mfc-label">Date:</span>
+              <strong>{{ f.archived_date|format_date }}</strong>
+            </div>
+          </div>
+          <div class="mfc-footer">
+            <span style="font-size:11px; color:var(--text-muted);">By: {{ f.archived_by.full_name if f.archived_by else 'UFMS Archive Cell' }}</span>
+            <a href="{{ url_for('files.detail', file_id=f.id) }}" class="btn btn-secondary btn-sm">
+              View Record &rarr;
+            </a>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div style="text-align:center; padding:24px; color:var(--text-muted); font-size:13px;">
+          No archived records found matching the query.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Pagination -->
+{% if pagination.pages > 1 %}
+<ul class="pagination">
+  <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+    <a class="page-link" href="{{ url_for('workflow_views.archive', page=pagination.prev_num, search=search) }}">&laquo; Previous</a>
+  </li>
+  {% for page_num in pagination.iter_pages(left_edge=2, left_current=2, right_current=3, right_edge=2) %}
+    {% if page_num %}
+      <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
+        <a class="page-link" href="{{ url_for('workflow_views.archive', page=page_num, search=search) }}">{{ page_num }}</a>
+      </li>
+    {% else %}
+      <li class="page-item disabled"><span class="page-link">…</span></li>
+    {% endif %}
+  {% endfor %}
+  <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+    <a class="page-link" href="{{ url_for('workflow_views.archive', page=pagination.next_num, search=search) }}">Next &raquo;</a>
+  </li>
+</ul>
+{% endif %}
+{% endblock %}

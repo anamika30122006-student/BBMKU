@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+{% block title %}Approval & Decisions Registry — BBMKU UFMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2 class="page-title">Approval & Decisions Registry</h2>
+    <div class="page-subtitle">Official sanctions, approvals, and recorded rejections across all BBMKU branches</div>
+  </div>
+  {% if current_user.has_permission('export_reports') %}
+  <a href="{{ url_for('reports.export_csv', type='decisions') }}" class="btn btn-secondary">
+    Export Decisions (CSV)
+  </a>
+  {% endif %}
+</div>
+
+<!-- Type Filter (Swipeable App Pill Tabs) -->
+<div class="app-filter-tabs">
+  <a href="{{ url_for('workflow_views.decisions') }}" class="app-filter-tab {% if not decision_type %}active{% endif %}">
+    All Decisions ({{ pagination.total }})
+  </a>
+  <a href="{{ url_for('workflow_views.decisions', type='Approved') }}" class="app-filter-tab {% if decision_type == 'Approved' %}active{% endif %}">
+    Approved Only
+  </a>
+  <a href="{{ url_for('workflow_views.decisions', type='Rejected') }}" class="app-filter-tab danger-pill {% if decision_type == 'Rejected' %}active-danger{% endif %}">
+    Rejected Only
+  </a>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">Decisions Recorded ({{ pagination.total }})</div>
+    <div style="font-size:12px; color:var(--text-muted);">Page {{ pagination.page }} of {{ pagination.pages or 1 }}</div>
+  </div>
+  <div class="card-body" style="padding:0;">
+    <!-- Desktop Table View -->
+    <div class="table-responsive d-none-mobile">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>File Number</th>
+            <th>Subject</th>
+            <th>Decision</th>
+            <th>Sanctioning Authority</th>
+            <th>Remarks / Justification</th>
+            <th>Date & Time</th>
+            <th style="text-align:right;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if decisions %}
+            {% for d in decisions %}
+            <tr>
+              <td class="table-file-number">
+                <a href="{{ url_for('files.detail', file_id=d.file_id) }}" style="color:var(--navy-primary);">
+                  {{ d.file.file_number if d.file else 'File #' ~ d.file_id }}
+                </a>
+              </td>
+              <td style="max-width:240px; font-weight:600;">
+                {{ d.file.subject if d.file else '—' }}
+              </td>
+              <td>
+                <span class="badge {{ d.decision_type|status_badge }}">{{ d.decision_type }}</span>
+              </td>
+              <td>
+                <div style="font-weight:600;">{{ d.officer.full_name }}</div>
+                <div style="font-size:11px; color:var(--text-muted);">{{ d.officer.designation }}</div>
+              </td>
+              <td style="font-size:12.5px; max-width:280px;">
+                {% if d.reason %}<strong>Reason:</strong> {{ d.reason }}<br>{% endif %}
+                {{ d.remarks }}
+                {% if d.conditions %}<br><span style="color:#b45309; font-size:11.5px;">Condition: {{ d.conditions }}</span>{% endif %}
+              </td>
+              <td style="font-size:12px; white-space:nowrap;">{{ d.decided_at|format_datetime }}</td>
+              <td style="text-align:right;">
+                <a href="{{ url_for('files.detail', file_id=d.file_id) }}" class="btn btn-secondary btn-sm">
+                  View File
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="7" style="text-align:center; padding:30px; color:var(--text-muted);">
+                No decision records found.
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Mobile Native Decision Cards -->
+    <div class="mobile-file-cards d-only-mobile">
+      {% if decisions %}
+        {% for d in decisions %}
+        <div class="mobile-file-card" style="border-left: 3px solid {% if d.decision_type == 'Approved' %}#16a34a{% elif d.decision_type == 'Rejected' %}#dc2626{% else %}#2563eb{% endif %};">
+          <div class="mfc-header">
+            <a href="{{ url_for('files.detail', file_id=d.file_id) }}" class="table-file-number">
+              {{ d.file.file_number if d.file else 'File #' ~ d.file_id }}
+            </a>
+            <span class="badge {{ d.decision_type|status_badge }}">{{ d.decision_type }}</span>
+          </div>
+          <a href="{{ url_for('files.detail', file_id=d.file_id) }}" class="mfc-subject">
+            {{ d.file.subject if d.file else '—' }}
+          </a>
+          <div class="mfc-meta-row">
+            <div>
+              <span class="mfc-label">Authority:</span>
+              <strong style="color:#0f172a;">{{ d.officer.full_name }}</strong>
+            </div>
+            <div>
+              <span class="mfc-label">Date:</span>
+              <strong style="color:#0f172a;">{{ d.decided_at|format_date }}</strong>
+            </div>
+          </div>
+          {% if d.reason or d.remarks %}
+          <div style="font-size:13px; color:#1e293b; background:#f8fafc; padding:10px 12px; border-radius:var(--radius-sm); border:1px solid #e2e8f0; line-height:1.45; word-break:break-word;">
+            {% if d.reason %}<div style="margin-bottom:4px;"><strong style="color:#64748b; font-size:11.5px; text-transform:uppercase;">Reason:</strong> {{ d.reason }}</div>{% endif %}
+            {% if d.remarks %}<div><strong style="color:#64748b; font-size:11.5px; text-transform:uppercase;">Remarks:</strong> {{ d.remarks }}</div>{% endif %}
+            {% if d.conditions %}<div style="margin-top:6px; padding-top:6px; border-top:1px dashed #cbd5e1;"><strong style="color:#b45309; font-size:11.5px; text-transform:uppercase;">Condition:</strong> {{ d.conditions }}</div>{% endif %}
+          </div>
+          {% endif %}
+          <div class="mfc-footer">
+            <span style="font-size:12px; color:#475569; font-weight:500;">{{ d.decided_at|format_datetime }}</span>
+            <a href="{{ url_for('files.detail', file_id=d.file_id) }}" class="btn btn-secondary btn-sm" style="font-weight:600; padding:6px 14px;">
+              View File &rarr;
+            </a>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div style="text-align:center; padding:24px; color:var(--text-muted); font-size:13px;">
+          No decision records found.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Pagination -->
+{% if pagination.pages > 1 %}
+<ul class="pagination">
+  <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+    <a class="page-link" href="{{ url_for('workflow_views.decisions', page=pagination.prev_num, type=decision_type) }}">&laquo; Previous</a>
+  </li>
+  {% for page_num in pagination.iter_pages(left_edge=2, left_current=2, right_current=3, right_edge=2) %}
+    {% if page_num %}
+      <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
+        <a class="page-link" href="{{ url_for('workflow_views.decisions', page=page_num, type=decision_type) }}">{{ page_num }}</a>
+      </li>
+    {% else %}
+      <li class="page-item disabled"><span class="page-link">…</span></li>
+    {% endif %}
+  {% endfor %}
+  <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+    <a class="page-link" href="{{ url_for('workflow_views.decisions', page=pagination.next_num, type=decision_type) }}">Next &raquo;</a>
+  </li>
+</ul>
+{% endif %}
+{% endblock %}

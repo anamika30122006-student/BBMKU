@@ -1,0 +1,642 @@
+{% extends 'base.html' %}
+{% block title %}File {{ file.file_number }} — BBMKU File Tracking{% endblock %}
+
+{% block content %}
+<!-- Top Header with Actions Toolbar -->
+<div class="page-header">
+  <div>
+    <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+      <span class="table-file-number" style="font-size:16px;">{{ file.file_number }}</span>
+      <span class="badge {{ file.status|status_badge }}">{{ file.status }}</span>
+      <span class="priority-badge {{ file.priority|priority_badge }}">{{ file.priority }}</span>
+      {% if file.confidentiality != 'General' %}
+      <span class="badge badge-rejected" style="font-size:10.5px;">{{ file.confidentiality }}</span>
+      {% endif %}
+    </div>
+    <h2 class="page-title" style="font-size:17px;">{{ file.subject }}</h2>
+  </div>
+
+  <!-- Action Buttons Toolbar (As per BBMKU Flowchart: Receive, Forward, Return, Approve/Close) -->
+  <div class="btn-group file-action-toolbar">
+    <!-- Receive Action (When in transit / awaiting receipt) -->
+    {% if file.status == 'Awaiting Receipt' and (file.current_officer_id == current_user.id or current_user.is_admin) %}
+    <form method="POST" action="{{ url_for('workflow.receive', file_id=file.id) }}" style="display:inline;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-primary" data-confirm="Acknowledge receipt of File {{ file.file_number }} into your official custody?">
+        Confirm Receipt
+      </button>
+    </form>
+    {% endif %}
+
+    <!-- Forward File -->
+    {% if current_user.has_permission('forward_file') and file.status not in ('Closed', 'Archived', 'Rejected') %}
+      {% if file.current_officer_id == current_user.id or current_user.is_admin %}
+      <button type="button" class="btn btn-primary" data-modal-target="forwardModal">
+        Forward to Next Department
+      </button>
+      {% endif %}
+    {% endif %}
+
+    <!-- Return File for Correction -->
+    {% if current_user.has_permission('return_file') and file.status not in ('Closed', 'Archived', 'Rejected') %}
+      {% if file.current_officer_id == current_user.id or current_user.is_admin %}
+      <button type="button" class="btn btn-warning" data-modal-target="returnModal">
+        Return for Correction
+      </button>
+      {% endif %}
+    {% endif %}
+
+    <!-- Approve File -->
+    {% if current_user.has_permission('approve_file') and file.status not in ('Approved', 'Closed', 'Archived', 'Rejected') %}
+    <button type="button" class="btn btn-success" data-modal-target="approveModal">
+      Approve File
+    </button>
+    {% endif %}
+
+    <!-- Reject File -->
+    {% if current_user.has_permission('reject_file') and file.status not in ('Closed', 'Archived', 'Rejected') %}
+    <button type="button" class="btn btn-danger" data-modal-target="rejectModal">
+      Reject File
+    </button>
+    {% endif %}
+
+    <!-- Close File (Final Approval / Disposal) -->
+    {% if current_user.has_permission('close_file') and file.status in ('Approved', 'Under Process') %}
+    <button type="button" class="btn btn-secondary" data-modal-target="closeModal">
+      Close File (Archive)
+    </button>
+    {% endif %}
+
+    <!-- Move to Archive -->
+    {% if current_user.has_permission('archive_file') and file.status == 'Closed' %}
+    <button type="button" class="btn btn-secondary" data-modal-target="archiveModal">
+      Record Room Archive
+    </button>
+    {% endif %}
+
+    <!-- Delete / Discard File (Initiator or Admin) -->
+    {% if current_user.is_admin or (file.initiating_officer_id == current_user.id and file.status in ('Draft', 'Submitted', 'Awaiting Receipt', 'Under Process')) %}
+    <form method="POST" action="{{ url_for('files.delete', file_id=file.id) }}" style="display:inline;" onsubmit="return confirm('Are you sure you want to permanently delete File {{ file.file_number }}? This action cannot be undone.');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-danger" style="background:#dc2626; border-color:#dc2626;">
+        Delete File
+      </button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Current Status & Custody Banner (App Widget Grid) -->
+<div class="custody-banner-card">
+  <div class="custody-banner-grid">
+    
+    <!-- Tile 1: Current Responsible Officer -->
+    <div class="custody-tile">
+      <div class="custody-tile-label">Custodian Officer</div>
+      <div class="custody-tile-val">
+        {{ file.current_officer.full_name }}
+      </div>
+      <div class="custody-tile-sub text-blue">
+        {{ file.current_officer.designation }}
+      </div>
+    </div>
+
+    <!-- Tile 2: Current Department -->
+    <div class="custody-tile">
+      <div class="custody-tile-label">Current Department</div>
+      <div class="custody-tile-val">
+        {{ file.current_department.name }}
+        <span class="custody-dept-code">{{ file.current_department.code }}</span>
+      </div>
+      <div class="custody-tile-sub">
+        Section: {{ file.current_section.name if file.current_section else 'Central Section' }}
+      </div>
+    </div>
+
+    <!-- Tile 3: Pending Duration -->
+    <div class="custody-tile">
+      <div class="custody-tile-label">Desk Duration</div>
+      <div class="custody-tile-val">
+        <span class="delay-badge {{ file.delay_status|delay_badge }}" style="font-size:12px; font-weight:700;">
+          {{ file.pending_days }} Days Pending
+        </span>
+      </div>
+      <div class="custody-tile-sub">
+        Total Age: {{ file.total_age_days }} days
+      </div>
+    </div>
+
+    <!-- Tile 4: Target Due Date -->
+    <div class="custody-tile">
+      <div class="custody-tile-label">Target Action Date</div>
+      <div class="custody-tile-val {% if file.is_overdue %}text-danger{% else %}text-navy{% endif %}">
+        {{ file.due_date|format_date if file.due_date else 'No Due Date Set' }}
+        {% if file.is_overdue %}
+        <span class="custody-overdue-tag">OVERDUE</span>
+        {% endif %}
+      </div>
+      <div class="custody-tile-sub">
+        Next: {{ file.next_expected_action or 'Action by Officer' }}
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Main 2-Column: Left = Notings & Documents, Right = Metadata & Movement Timeline -->
+<div class="file-detail-grid">
+  
+  <!-- LEFT COLUMN: Green Sheet Notings + Documents -->
+  <div>
+    <!-- Green Sheet Notings -->
+    <div class="card">
+      <div class="card-header" style="background:#f8fafc;">
+        <div>
+          <h3 class="card-title">File Notings (Green Sheet)</h3>
+          <div style="font-size:11.5px; color:var(--text-muted);">Sequential administrative notes and remarks</div>
+        </div>
+        {% if current_user.has_permission('add_note') and file.status not in ('Closed', 'Archived') %}
+        <button type="button" class="btn btn-secondary btn-sm" data-modal-target="addNoteModal">
+          Add Note
+        </button>
+        {% endif %}
+      </div>
+      <div class="card-body noting-sheet">
+        {% if file.notes %}
+          {% for note in file.notes %}
+          <div class="noting-paragraph">
+            <div class="noting-meta">
+              <span><strong>Note Paragraph #{{ note.note_number }}</strong> &bull; {{ note.note_type }}</span>
+              <span>{{ note.created_at|format_datetime }}</span>
+            </div>
+            <div class="noting-content">
+              {{ note.content|nl2br }}
+            </div>
+            <div class="noting-signature">
+              {{ note.author.full_name }}<br>
+              <span style="font-size:11px; color:var(--text-muted); font-weight:normal;">{{ note.author_designation }}</span>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div style="text-align:center; padding:20px; color:var(--text-muted); font-style:italic;">
+            No official notes have been recorded on this file yet.
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Attached Documents -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h3 class="card-title">Attached Supporting Documents</h3>
+          <div style="font-size:11.5px; color:var(--text-muted);">Annexures, proposals, orders and certificates</div>
+        </div>
+        {% if current_user.has_permission('upload_document') and file.status not in ('Closed', 'Archived') %}
+        <button type="button" class="btn btn-secondary btn-sm" data-modal-target="uploadDocModal">
+          Attach Document
+        </button>
+        {% endif %}
+      </div>
+      <div class="card-body" style="padding:0;">
+        <!-- Desktop Table View -->
+        <div class="table-responsive d-none-mobile">
+          <table class="table" style="font-size:12.5px;">
+            <thead>
+              <tr>
+                <th>Document Title</th>
+                <th>Size</th>
+                <th>Uploaded By</th>
+                <th>Date</th>
+                <th style="text-align:right;">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if file.documents %}
+                {% for doc in file.documents %}
+                <tr>
+                  <td>
+                    <div style="font-weight:600;">{{ doc.title }}</div>
+                    <div style="font-size:11px; color:var(--text-muted);">{{ doc.original_filename }}</div>
+                  </td>
+                  <td>{{ doc.file_size_display }}</td>
+                  <td>{{ doc.uploaded_by.full_name }}</td>
+                  <td style="font-size:11.5px;">{{ doc.uploaded_at|format_date }}</td>
+                  <td style="text-align:right;">
+                    <a href="{{ url_for('files.download_document', file_id=file.id, doc_id=doc.id) }}" class="btn btn-secondary btn-sm" download>
+                      Download
+                    </a>
+                  </td>
+                </tr>
+                {% endfor %}
+              {% else %}
+                <tr>
+                  <td colspan="5" style="text-align:center; padding:18px; color:var(--text-muted);">
+                    No documents are attached to this file.
+                  </td>
+                </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Mobile Native Document Cards (App Experience) -->
+        <div class="mobile-doc-list d-only-mobile">
+          {% if file.documents %}
+            {% for doc in file.documents %}
+            <div class="mobile-doc-item">
+              <div class="doc-item-left">
+                <span class="doc-ext-badge">{{ doc.file_extension|upper if doc.file_extension else 'DOC' }}</span>
+                <div style="min-width:0; flex:1;">
+                  <div class="doc-item-title">{{ doc.title }}</div>
+                  <div class="doc-item-meta">{{ doc.file_size_display }} &bull; {{ doc.uploaded_by.full_name }} &bull; {{ doc.uploaded_at|format_date }}</div>
+                </div>
+              </div>
+              <a href="{{ url_for('files.download_document', file_id=file.id, doc_id=doc.id) }}" class="btn btn-secondary btn-sm" download style="flex-shrink:0;">
+                Download
+              </a>
+            </div>
+            {% endfor %}
+          {% else %}
+            <div style="text-align:center; padding:18px; color:var(--text-muted); font-size:13px;">
+              No documents are attached to this file.
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Decision History -->
+    {% if file.decisions %}
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Decision & Sanction Records</h3>
+      </div>
+      <div class="card-body" style="padding:0;">
+        <div class="table-responsive">
+          <table class="table" style="font-size:12.5px;">
+            <thead>
+              <tr>
+                <th>Decision</th>
+                <th>Authority</th>
+                <th>Remarks / Reason</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for d in file.decisions %}
+              <tr>
+                <td><span class="badge {{ d.decision_type|status_badge }}">{{ d.decision_type }}</span></td>
+                <td>
+                  <strong>{{ d.officer.full_name }}</strong>
+                  <div style="font-size:11px; color:var(--text-muted);">{{ d.officer.designation }}</div>
+                </td>
+                <td>
+                  {% if d.reason %}<strong>Reason:</strong> {{ d.reason }}<br>{% endif %}
+                  {% if d.correction_instructions %}<strong>Instructions:</strong> {{ d.correction_instructions }}<br>{% endif %}
+                  {{ d.remarks or '' }}
+                </td>
+                <td style="font-size:11.5px;">{{ d.decided_at|format_date }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- RIGHT COLUMN: File Metadata & Movement Timeline -->
+  <div>
+    <!-- Metadata Card -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">File Details</h3>
+      </div>
+      <div class="card-body" style="padding:12px 18px;">
+        <table class="table file-details-table" style="font-size:12.5px;">
+          <tr>
+            <th>Initiated By</th>
+            <td>
+              <strong>{{ file.initiating_officer.full_name }}</strong>
+              <div style="font-size:11px; color:var(--text-muted);">{{ file.initiating_officer.designation }}</div>
+            </td>
+          </tr>
+          <tr>
+            <th>Initiating Dept</th>
+            <td>{{ file.initiating_department.name }} ({{ file.initiating_department.code }})</td>
+          </tr>
+          <tr>
+            <th>Category</th>
+            <td>{{ file.category }}</td>
+          </tr>
+          <tr>
+            <th>Priority</th>
+            <td><span class="priority-badge {{ file.priority|priority_badge }}">{{ file.priority }}</span></td>
+          </tr>
+          <tr>
+            <th>Confidentiality</th>
+            <td>{{ file.confidentiality }}</td>
+          </tr>
+          <tr>
+            <th>Date Registered</th>
+            <td>{{ file.created_at|format_datetime }}</td>
+          </tr>
+          <tr>
+            <th>Last Action</th>
+            <td>
+              <div>{{ file.last_action }}</div>
+              <div style="font-size:11px; color:var(--text-muted);">{{ file.last_action_at|format_datetime }}</div>
+            </td>
+          </tr>
+          {% if file.closure_date %}
+          <tr>
+            <th>Closed Date</th>
+            <td>{{ file.closure_date|format_datetime }}</td>
+          </tr>
+          {% endif %}
+          {% if file.archived_location %}
+          <tr>
+            <th>Archive Shelf Location</th>
+            <td><strong>{{ file.archived_location }}</strong></td>
+          </tr>
+          {% endif %}
+        </table>
+      </div>
+    </div>
+
+    <!-- Movement Stepper Timeline -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Movement History & Routing Trail</h3>
+      </div>
+      <div class="card-body">
+        <div class="timeline">
+          {% for m in file.movements %}
+          <div class="timeline-item {% if loop.first %}active{% endif %}">
+            <div class="timeline-dot"></div>
+            <div class="timeline-header">
+              <span class="timeline-title">{{ m.action_taken }}</span>
+              <span class="timeline-date">{{ m.dispatch_date|format_datetime }}</span>
+            </div>
+            <div class="timeline-body">
+              <div style="display:flex; justify-content:space-between; margin-bottom:3px; font-weight:600; font-size:12px; flex-wrap:wrap; gap:4px 10px;">
+                <span>From: {{ m.from_user.full_name }} ({{ m.from_department.code }})</span>
+                <span>To: {{ m.to_user.full_name }} ({{ m.to_department.code }})</span>
+              </div>
+              <div style="font-size:12.5px; color:var(--text-primary); word-break:break-word;">
+                {{ m.remarks }}
+              </div>
+              <div style="font-size:11px; color:var(--text-muted); margin-top:5px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:4px 10px;">
+                <span>Mode: {{ m.dispatch_mode }}</span>
+                <span>Status: {% if m.is_received %}Acknowledged{% else %}In Transit{% endif %}</span>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- MODALS FOR ADMINISTRATIVE ACTIONS -->
+
+<!-- 1. Forward File Modal -->
+<div class="modal-overlay" id="forwardModal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h4 class="modal-title">Forward File to Next Department / Officer</h4>
+      <button type="button" class="modal-close" data-modal-close>&times;</button>
+    </div>
+    <form method="POST" action="{{ url_for('workflow.forward', file_id=file.id) }}">
+      {{ forward_form.hidden_tag() }}
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Forward To Next Department & Officer *</label>
+          {{ forward_form.to_user_id(class="form-control", required=True) }}
+          <div class="form-text">Select the target department and designated officer as per the official movement routing.</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Action Requested *</label>
+          {{ forward_form.action_type(class="form-control") }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Movement Mode</label>
+          {{ forward_form.dispatch_mode(class="form-control") }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Peon Book / Register No. (Optional)</label>
+          {{ forward_form.dispatch_number(class="form-control", placeholder="e.g. PB-2026/88") }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Forwarding Remarks / Directive *</label>
+          {{ forward_form.remarks(class="form-control", rows="3", placeholder="Enter specific instructions for the receiving department/officer...", required=True) }}
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
+        <button type="submit" class="btn btn-primary" data-confirm="Forward this file now?">Forward File</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 2. Return File Modal -->
+<div class="modal-overlay" id="returnModal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h4 class="modal-title">Return File for Correction (to Previous Department)</h4>
+      <button type="button" class="modal-close" data-modal-close>&times;</button>
+    </div>
+    <form method="POST" action="{{ url_for('workflow.return_file', file_id=file.id) }}">
+      {{ return_form.hidden_tag() }}
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Return To Officer *</label>
+          {{ return_form.return_to_user_id(class="form-control", required=True) }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Reason for Return *</label>
+          {{ return_form.reason(class="form-control", placeholder="e.g. Missing annexures or rectification required", required=True) }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Detailed Correction Instructions *</label>
+          {{ return_form.correction_instructions(class="form-control", rows="3", placeholder="Specify what corrections must be carried out...", required=True) }}
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
+        <button type="submit" class="btn btn-warning" data-confirm="Return this file for correction?">Return File</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 3. Approve File Modal -->
+<div class="modal-overlay" id="approveModal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h4 class="modal-title">Formal File Approval / Sanction</h4>
+      <button type="button" class="modal-close" data-modal-close>&times;</button>
+    </div>
+    <form method="POST" action="{{ url_for('workflow.approve', file_id=file.id) }}">
+      {{ approve_form.hidden_tag() }}
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Approval Minute / Sanction Remarks *</label>
+          {{ approve_form.remarks(class="form-control", rows="3", placeholder="Approved as recommended. Sanction accorded.", required=True) }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Conditions (Optional)</label>
+          {{ approve_form.conditions(class="form-control", rows="2") }}
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
+        <button type="submit" class="btn btn-success" data-confirm="Confirm approval for this file?">Approve File</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 4. Reject File Modal -->
+<div class="modal-overlay" id="rejectModal">
+  <div class="modal-card">
+    <div class="modal-header" style="background-color:#991b1b;">
+      <h4 class="modal-title">Formal File Rejection</h4>
+      <button type="button" class="modal-close" data-modal-close>&times;</button>
+    </div>
+    <form method="POST" action="{{ url_for('workflow.reject', file_id=file.id) }}">
+      {{ reject_form.hidden_tag() }}
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Primary Rejection Reason *</label>
+          {{ reject_form.reason(class="form-control", placeholder="e.g. Not permissible under university statute", required=True) }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Detailed Reasoning *</label>
+          {{ reject_form.remarks(class="form-control", rows="3", required=True) }}
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
+        <button type="submit" class="btn btn-danger" data-confirm="Confirm rejection of this file?">Reject File</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 5. Close File Modal -->
+<div class="modal-overlay" id="closeModal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h4 class="modal-title">Close File (Archive Final Status)</h4>
+      <button type="button" class="modal-close" data-modal-close>&times;</button>
+    </div>
+    <form method="POST" action="{{ url_for('workflow.close', file_id=file.id) }}">
+      {{ close_form.hidden_tag() }}
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Closure Summary / Final Order Dispatched *</label>
+          {{ close_form.remarks(class="form-control", rows="3", placeholder="e.g. Executive order issued and compliance confirmed. File closed.", required=True) }}
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
+        <button type="submit" class="btn btn-primary" data-confirm="Confirm closure of File {{ file.file_number }}?">Close File</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 6. Archive File Modal -->
+<div class="modal-overlay" id="archiveModal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h4 class="modal-title">Move File to Record Room Archive</h4>
+      <button type="button" class="modal-close" data-modal-close>&times;</button>
+    </div>
+    <form method="POST" action="{{ url_for('workflow.archive', file_id=file.id) }}">
+      {{ archive_form.hidden_tag() }}
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Record Room Rack / Shelf Location *</label>
+          {{ archive_form.archive_location(class="form-control", placeholder="e.g. Central Record Room Rack B-4, Shelf 2", required=True) }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Archival Notes (Optional)</label>
+          {{ archive_form.remarks(class="form-control", rows="2") }}
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
+        <button type="submit" class="btn btn-primary">Archive Record</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 7. Add Note Modal -->
+<div class="modal-overlay" id="addNoteModal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h4 class="modal-title">Add Official File Noting (Green Sheet)</h4>
+      <button type="button" class="modal-close" data-modal-close>&times;</button>
+    </div>
+    <form method="POST" action="{{ url_for('files.add_note', file_id=file.id) }}">
+      {{ note_form.hidden_tag() }}
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Noting Type *</label>
+          {{ note_form.note_type(class="form-control") }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Noting Content *</label>
+          {{ note_form.content(class="form-control", rows="5", placeholder="Enter the official minute or paragraph...", required=True) }}
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
+        <button type="submit" class="btn btn-primary">Record Note</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 8. Upload Document Modal -->
+<div class="modal-overlay" id="uploadDocModal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h4 class="modal-title">Attach Supporting Document</h4>
+      <button type="button" class="modal-close" data-modal-close>&times;</button>
+    </div>
+    <form method="POST" action="{{ url_for('files.upload_document', file_id=file.id) }}" enctype="multipart/form-data">
+      {{ doc_form.hidden_tag() }}
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Document Title *</label>
+          {{ doc_form.title(class="form-control", placeholder="e.g. Verified Marksheet Sample or Quotation", required=True) }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Select File *</label>
+          {{ doc_form.document(class="form-control", required=True) }}
+          <div class="form-text">PDF, DOCX, XLSX, JPG, PNG (Max 32MB)</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Notes (Optional)</label>
+          {{ doc_form.description(class="form-control", rows="2") }}
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
+        <button type="submit" class="btn btn-primary">Upload Attachment</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}

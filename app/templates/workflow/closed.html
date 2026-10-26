@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+{% block title %}Closed Files Repository — BBMKU UFMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2 class="page-title">Closed Files Repository</h2>
+    <div class="page-subtitle">Fully completed and disposed university files with final orders issued</div>
+  </div>
+  {% if current_user.has_permission('export_reports') %}
+  <a href="{{ url_for('reports.export_csv', type='closed_archived') }}" class="btn btn-secondary">
+    Export Closed Files (CSV)
+  </a>
+  {% endif %}
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">Completed Files ({{ pagination.total }})</div>
+    <div style="font-size:12px; color:var(--text-muted);">Page {{ pagination.page }} of {{ pagination.pages or 1 }}</div>
+  </div>
+  <div class="card-body" style="padding:0;">
+    <!-- Desktop Table View -->
+    <div class="table-responsive d-none-mobile">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>File Number</th>
+            <th>Subject</th>
+            <th>Department</th>
+            <th>Category</th>
+            <th>Closure Date</th>
+            <th>Closed By Authority</th>
+            <th>Closure Summary</th>
+            <th style="text-align:right;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if files %}
+            {% for f in files %}
+            <tr>
+              <td class="table-file-number">
+                <a href="{{ url_for('files.detail', file_id=f.id) }}" style="color:var(--navy-primary);">
+                  {{ f.file_number }}
+                </a>
+              </td>
+              <td style="max-width:280px; font-weight:600;">
+                <a href="{{ url_for('files.detail', file_id=f.id) }}" style="color:var(--text-main);">
+                  {{ f.subject }}
+                </a>
+              </td>
+              <td>{{ f.initiating_department.name if f.initiating_department else '' }}</td>
+              <td>{{ f.category }}</td>
+              <td style="font-size:12px;">{{ f.closure_date|format_date }}</td>
+              <td>
+                <div style="font-weight:600;">{{ f.closed_by.full_name if f.closed_by else 'Competent Authority' }}</div>
+                <div style="font-size:11px; color:var(--text-muted);">{{ f.closed_by.designation if f.closed_by else '' }}</div>
+              </td>
+              <td style="font-size:12px; max-width:260px;">{{ f.closure_remarks or 'Completed' }}</td>
+              <td style="text-align:right; white-space:nowrap;">
+                <a href="{{ url_for('files.detail', file_id=f.id) }}" class="btn btn-secondary btn-sm">
+                  View File
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="8" style="text-align:center; padding:32px; color:var(--text-muted);">
+                No closed files recorded in repository.
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Mobile Native File Cards -->
+    <div class="mobile-file-cards d-only-mobile">
+      {% if files %}
+        {% for f in files %}
+        <div class="mobile-file-card" style="border-left: 3px solid #64748b;">
+          <div class="mfc-header">
+            <a href="{{ url_for('files.detail', file_id=f.id) }}" class="table-file-number">
+              {{ f.file_number }}
+            </a>
+            <span class="badge badge-closed">Closed</span>
+          </div>
+          <a href="{{ url_for('files.detail', file_id=f.id) }}" class="mfc-subject">
+            {{ f.subject }}
+          </a>
+          <div class="mfc-meta-row">
+            <div>
+              <span class="mfc-label">Dept:</span>
+              <strong>{{ f.initiating_department.code if f.initiating_department else 'Central' }}</strong>
+            </div>
+            <div>
+              <span class="mfc-label">Closed:</span>
+              <strong>{{ f.closure_date|format_date }}</strong>
+            </div>
+          </div>
+          {% if f.closure_remarks %}
+          <div style="font-size:12px; color:var(--text-primary); background:#f8fafc; padding:6px 10px; border-radius:var(--radius-sm); border:1px solid var(--border-light); word-break:break-word;">
+            {{ f.closure_remarks }}
+          </div>
+          {% endif %}
+          <div class="mfc-footer">
+            <span style="font-size:11px; color:var(--text-muted);">By: {{ f.closed_by.full_name if f.closed_by else 'Competent Authority' }}</span>
+            <a href="{{ url_for('files.detail', file_id=f.id) }}" class="btn btn-secondary btn-sm">
+              View File &rarr;
+            </a>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div style="text-align:center; padding:24px; color:var(--text-muted); font-size:13px;">
+          No closed files recorded in repository.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Pagination -->
+{% if pagination.pages > 1 %}
+<ul class="pagination">
+  <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+    <a class="page-link" href="{{ url_for('workflow_views.closed_files', page=pagination.prev_num) }}">&laquo; Previous</a>
+  </li>
+  {% for page_num in pagination.iter_pages(left_edge=2, left_current=2, right_current=3, right_edge=2) %}
+    {% if page_num %}
+      <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
+        <a class="page-link" href="{{ url_for('workflow_views.closed_files', page=page_num) }}">{{ page_num }}</a>
+      </li>
+    {% else %}
+      <li class="page-item disabled"><span class="page-link">…</span></li>
+    {% endif %}
+  {% endfor %}
+  <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+    <a class="page-link" href="{{ url_for('workflow_views.closed_files', page=pagination.next_num) }}">Next &raquo;</a>
+  </li>
+</ul>
+{% endif %}
+{% endblock %}

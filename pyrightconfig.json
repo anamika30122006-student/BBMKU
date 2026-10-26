@@ -1,0 +1,17 @@
+{
+  "include": [
+    "app",
+    "tests"
+  ],
+  "exclude": [
+    "**/__pycache__",
+    ".pytest_cache"
+  ],
+  "typeCheckingMode": "off",
+  "reportGeneralTypeIssues": "none",
+  "reportAttributeAccessIssue": "none",
+  "reportCallIssue": "none",
+  "reportOptionalMemberAccess": "none",
+  "reportUnusedVariable": "none",
+  "reportArgumentType": "none"
+}

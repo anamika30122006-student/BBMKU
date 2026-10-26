@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Administrative Sign In - BBMKU File Tracking System</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/favicon.png') }}">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(180deg, #090d16 0%, #0f172a 50%, #1e293b 100%);
+      font-family: var(--font-sans);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .login-wrapper {
+      flex: 1;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 20px 14px;
+    }
+    .login-card {
+      background: #ffffff;
+      width: 100%;
+      max-width: 430px;
+      border-radius: 14px;
+      box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.45);
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      animation: fadeInCard 0.25s ease-out;
+    }
+    @keyframes fadeInCard {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .login-header {
+      text-align: center;
+      padding: 22px 20px 16px;
+      background: #ffffff;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .login-logo {
+      width: 76px;
+      height: 76px;
+      object-fit: contain;
+      margin: 0 auto 8px;
+      display: block;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.06));
+    }
+    .login-univ-name {
+      font-size: 13.5px;
+      font-weight: 800;
+      color: #0f172a;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      line-height: 1.3;
+    }
+    .login-portal-title {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #2563eb;
+      margin-top: 3px;
+      letter-spacing: 0.4px;
+    }
+    .login-body {
+      padding: 20px 22px;
+    }
+    .login-body .form-group {
+      margin-bottom: 14px;
+    }
+    .login-body .form-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: #334155;
+      margin-bottom: 6px;
+      display: block;
+    }
+    .login-body .form-control {
+      height: 44px;
+      padding: 10px 13px;
+      font-size: 14.5px;
+      border-radius: 8px;
+      border: 1.5px solid #cbd5e1;
+      width: 100%;
+      background: #ffffff;
+      color: #0f172a;
+      transition: all 0.15s ease;
+    }
+    .login-body .form-control:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+      outline: none;
+    }
+    .login-btn {
+      width: 100%;
+      height: 44px;
+      background: #2563eb;
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s ease, transform 0.1s ease;
+      box-shadow: 0 2px 4px rgba(37, 99, 235, 0.25);
+    }
+    .login-btn:hover {
+      background: #1d4ed8;
+    }
+    .login-btn:active {
+      transform: scale(0.99);
+      background: #1e40af;
+    }
+    .quick-credentials-box {
+      margin-top: 18px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 12px;
+    }
+    .quick-cred-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      color: #64748b;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .quick-cred-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+    }
+    .quick-cred-chip {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 8px 6px;
+      text-align: center;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.12s ease;
+    }
+    .quick-cred-chip:hover {
+      background: #eff6ff;
+      border-color: #93c5fd;
+    }
+    .quick-cred-chip:active {
+      transform: scale(0.96);
+      background: #dbeafe;
+      border-color: #2563eb;
+    }
+    .qcc-role {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #0f172a;
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .qcc-meta {
+      font-size: 10px;
+      color: #64748b;
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .login-footer-text {
+      margin-top: 16px;
+      font-size: 11.5px;
+      color: #94a3b8;
+      text-align: center;
+      line-height: 1.4;
+    }
+
+    @media (max-width: 480px) {
+      .login-wrapper {
+        padding: 12px 10px 16px;
+      }
+      .login-card {
+        border-radius: 12px;
+      }
+      .login-header {
+        padding: 18px 14px 14px;
+      }
+      .login-logo {
+        width: 64px;
+        height: 64px;
+        margin-bottom: 6px;
+      }
+      .login-univ-name {
+        font-size: 12.5px;
+      }
+      .login-portal-title {
+        font-size: 11px;
+      }
+      .login-body {
+        padding: 16px 14px;
+      }
+      .quick-credentials-box {
+        padding: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="login-wrapper">
+  <div class="login-card">
+    <div class="login-header">
+      <img src="{{ url_for('static', filename='images/logo.png') }}" alt="BBMKU Official Seal" class="login-logo">
+      <div class="login-univ-name">Binod Bihari Mahto Koyalanchal University</div>
+      <div class="login-portal-title">University File Tracking System</div>
+    </div>
+
+    <div class="login-body">
+      <!-- Flash Messages -->
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category }}" style="font-size:12.5px; padding:8px 12px; border-radius:6px; margin-bottom:14px;">
+              <span>{{ message }}</span>
+              <button type="button" class="alert-close" onclick="this.parentElement.remove();">&times;</button>
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <form method="POST" action="{{ url_for('auth.login') }}" novalidate>
+        {{ form.hidden_tag() }}
+
+        <div class="form-group">
+          <label class="form-label" for="username">Username or Official Email</label>
+          {{ form.username(class="form-control", placeholder="e.g. ec_sir or admin", id="username", required=True) }}
+          {% if form.username.errors %}
+            <div class="form-error" style="font-size:11.5px; color:#dc2626; margin-top:4px;">{{ form.username.errors[0] }}</div>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="password">Password</label>
+          {{ form.password(class="form-control", placeholder="Password", id="password", required=True) }}
+          {% if form.password.errors %}
+            <div class="form-error" style="font-size:11.5px; color:#dc2626; margin-top:4px;">{{ form.password.errors[0] }}</div>
+          {% endif %}
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+          <label style="font-size:12.5px; color:#475569; display:flex; align-items:center; gap:6px; cursor:pointer;">
+            {{ form.remember() }}
+            <span>Remember this computer</span>
+          </label>
+        </div>
+
+        <button type="submit" class="login-btn">
+          Sign In to Portal
+        </button>
+      </form>
+
+      <!-- Test Accounts Click helper -->
+      <div class="quick-credentials-box">
+        <div class="quick-cred-title">
+          <span>Quick Sign In</span>
+          <span style="font-weight:500; font-size:10px; text-transform:none;">Tap to fill</span>
+        </div>
+        <div class="quick-cred-grid">
+          <div class="quick-cred-chip" onclick="fillCreds('ec_sir', 'Password@123', this)">
+            <div class="qcc-role">EC Sir</div>
+            <div class="qcc-meta">Executive Viewer</div>
+          </div>
+          <div class="quick-cred-chip" onclick="fillCreds('admin', 'Admin@123', this)">
+            <div class="qcc-role">Administrator</div>
+            <div class="qcc-meta">System Admin</div>
+          </div>
+          <div class="quick-cred-chip" onclick="fillCreds('vc_bbmku', 'Password@123', this)">
+            <div class="qcc-role">Vice-Chancellor</div>
+            <div class="qcc-meta">VC Secretariat</div>
+          </div>
+          <div class="quick-cred-chip" onclick="fillCreds('registrar', 'Password@123', this)">
+            <div class="qcc-role">Registrar</div>
+            <div class="qcc-meta">Registrar Office</div>
+          </div>
+          <div class="quick-cred-chip" onclick="fillCreds('so_establishment', 'Password@123', this)">
+            <div class="qcc-role">Section Officer</div>
+            <div class="qcc-meta">SO Establishment</div>
+          </div>
+          <div class="quick-cred-chip" onclick="fillCreds('da_admin', 'Password@123', this)">
+            <div class="qcc-role">Dealing Assistant</div>
+            <div class="qcc-meta">DA Establishment</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="login-footer-text">
+    Binod Bihari Mahto Koyalanchal University (BBMKU), Dhanbad<br>
+    Internal Administrative Network &bull; Secure Authentication
+  </div>
+</div>
+
+<script>
+  function fillCreds(username, password, el) {
+    const userInput = document.getElementById('username');
+    const passInput = document.getElementById('password');
+    userInput.value = username;
+    passInput.value = password;
+    
+    // Quick visual feedback
+    if (el) {
+      el.style.borderColor = '#2563eb';
+      el.style.backgroundColor = '#eff6ff';
+      setTimeout(() => {
+        el.style.borderColor = '';
+        el.style.backgroundColor = '';
+      }, 350);
+    }
+  }
+</script>
+
+</body>
+</html>

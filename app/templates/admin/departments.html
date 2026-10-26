@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+{% block title %}Departments & Sections Management — BBMKU UFMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2 class="page-title">Departments & Sections Management</h2>
+    <div class="page-subtitle">Configure university branches, departments, and administrative cells</div>
+  </div>
+</div>
+
+<div class="admin-split-grid">
+  
+  <!-- Add Department Form -->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Add New Department</h3>
+    </div>
+    <div class="card-body">
+      <form method="POST" action="{{ url_for('admin.departments') }}">
+        {{ form.hidden_tag() }}
+
+        <div class="form-group">
+          <label class="form-label" for="name">Department Name *</label>
+          {{ form.name(class="form-control", id="name", placeholder="e.g. Finance & Accounts", required=True) }}
+          {% if form.name.errors %}
+            <div class="form-error">{{ form.name.errors[0] }}</div>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="code">Department Code *</label>
+          {{ form.code(class="form-control", id="code", placeholder="e.g. FIN", required=True) }}
+          <div class="form-text">Used in automatic file numbering (BBMKU/CODE/YEAR/...)</div>
+          {% if form.code.errors %}
+            <div class="form-error">{{ form.code.errors[0] }}</div>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="description">Description</label>
+          {{ form.description(class="form-control", id="description", rows="2") }}
+        </div>
+
+        <div class="form-group">
+          <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+            {{ form.is_active() }}
+            <span>Active Department</span>
+          </label>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width:100%;">Create Department</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Departments List -->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Active University Departments ({{ departments|length }})</h3>
+    </div>
+    <div class="card-body" style="padding:0;">
+      <!-- Desktop Table -->
+      <div class="table-responsive d-none-mobile">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Code</th>
+              <th>Department Name</th>
+              <th>Sections / Branches</th>
+              <th>Status</th>
+              <th>Add Section</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for d in departments %}
+            <tr>
+              <td><strong style="color:var(--navy-primary);">{{ d.code }}</strong></td>
+              <td>
+                <div style="font-weight:600;">{{ d.name }}</div>
+                <div style="font-size:11.5px; color:var(--text-muted);">{{ d.description or '' }}</div>
+              </td>
+              <td>
+                {% if d.sections.count() > 0 %}
+                  <div style="display:flex; flex-wrap:wrap; gap:4px;">
+                    {% for s in d.sections %}
+                      <span class="badge badge-default" title="{{ s.name }}">{{ s.code }}</span>
+                    {% endfor %}
+                  </div>
+                {% else %}
+                  <span style="font-size:11px; color:var(--text-light);">None</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if d.is_active %}
+                <span class="badge badge-approved">Active</span>
+                {% else %}
+                <span class="badge badge-rejected">Inactive</span>
+                {% endif %}
+              </td>
+              <td>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="openSectionModal({{ d.id }}, '{{ d.code }} - {{ d.name }}')">
+                  + Section
+                </button>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Mobile Native Department Cards -->
+      <div class="mobile-file-cards d-only-mobile">
+        {% for d in departments %}
+        <div class="mobile-file-card">
+          <div class="mfc-header">
+            <span class="mdi-code">{{ d.code }}</span>
+            <span class="badge {% if d.is_active %}badge-approved{% else %}badge-rejected{% endif %}">
+              {{ 'Active' if d.is_active else 'Inactive' }}
+            </span>
+          </div>
+          <div style="font-size:13.5px; font-weight:700; color:var(--brand-navy);">{{ d.name }}</div>
+          {% if d.description %}
+          <div style="font-size:12px; color:var(--text-muted);">{{ d.description }}</div>
+          {% endif %}
+          <div class="mfc-footer">
+            <span style="font-size:11.5px; color:var(--text-muted);">{{ d.sections.count() }} Sections</span>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="openSectionModal({{ d.id }}, '{{ d.code }} - {{ d.name }}')">
+              + Section
+            </button>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Add Section Modal -->
+<div class="modal-overlay" id="addSectionModal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h4 class="modal-title" id="sectionModalTitle">Add Section</h4>
+      <button type="button" class="modal-close" data-modal-close>&times;</button>
+    </div>
+    <form id="sectionForm" method="POST" action="">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Section / Branch Name *</label>
+          <input type="text" name="name" class="form-control" placeholder="e.g. Budget & Grants Section" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Section Code *</label>
+          <input type="text" name="code" class="form-control" placeholder="e.g. FIN-BG" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description (Optional)</label>
+          <textarea name="description" class="form-control" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Section</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  function openSectionModal(deptId, deptName) {
+    document.getElementById('sectionModalTitle').innerText = 'Add Section to ' + deptName;
+    document.getElementById('sectionForm').action = '/admin/departments/' + deptId + '/sections/create';
+    document.getElementById('addSectionModal').classList.add('show');
+  }
+</script>
+{% endblock %}
